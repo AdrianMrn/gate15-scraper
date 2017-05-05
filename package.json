@@ -1,0 +1,16 @@
+{
+  "name": "gate15-news-scraper",
+  "version": "1.0.0",
+  "description": "Script to get news items from the Gate15 website and send them to lyba's API for saving them in the database",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adriaan Marain",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.4.0",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.0"
+  }
+}
