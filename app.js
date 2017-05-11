@@ -24,7 +24,7 @@ function scrapePage(page) {
         async.each(news, function(newsItem, callbackArticle) {
             var article = {};
             var title, articleUrl, author, imageUrl, publishedAt;
-            var articleContent = {};
+            var articleContent = "";
 
             title = newsItem.title;
             articleUrl = "https://www.gate15.be" + newsItem.uriPrefix + "/" + newsItem.slug;
@@ -37,20 +37,19 @@ function scrapePage(page) {
                 if (snippet.type == "media" && !imageUrl) {
                     imageUrl = snippet.body.file[0].src;
                 } else {
-                    //articleContent.push(snippet.body.text);
-                    articleContent[snippetPart] = snippet.body.text;
-                    snippetPart++;
+                    articleContent += snippet.body.text + " ";
                 }
                 
                 callbackSnippet();
             }, function() {
                 
+                //mysql column names
                 article.title = title;
                 article.author = author;
                 article.article_url = articleUrl;
                 article.picture_url = imageUrl;
                 article.published_on = publishedAt.substring(0,10);
-                article.content = JSON.stringify(articleContent);
+                article.content = articleContent;
                 article.is_accepted = 0;
 
                 console.log(articleNumber);
