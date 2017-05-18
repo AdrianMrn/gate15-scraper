@@ -26,6 +26,7 @@ function scrapePage(page) {
             var title, articleUrl, author, imageUrl, publishedAt;
             var articleContent = "";
 
+            tags = "";
             title = newsItem.title;
             articleUrl = "https://www.gate15.be" + newsItem.uriPrefix + "/" + newsItem.slug;
             author = "gate15";
@@ -39,35 +40,39 @@ function scrapePage(page) {
                 } else {
                     articleContent += snippet.body.text + " ";
                 }
-                
                 callbackSnippet();
             }, function() {
-                
-                //mysql column names
-                article.title = title;
-                article.author = author;
-                article.article_url = articleUrl;
-                article.picture_url = imageUrl;
-                article.published_on = publishedAt.substring(0,10);
-                article.content = articleContent;
-                article.is_accepted = 0;
+                async.each(newsItem.tags, function(tag, callbackTag) {
+                    tags += " " + tag;
+                    callbackTag();
+                }, function() {
+                    //mysql column names
+                    article.title = title;
+                    article.author = author;
+                    article.article_url = articleUrl;
+                    article.picture_url = imageUrl;
+                    article.published_on = publishedAt.substring(0,10);
+                    article.content = articleContent;
+                    article.is_accepted = 0;
+                    article.tags = tags;
 
-                console.log(articleNumber);
-                articleNumber++;
+                    console.log(articleNumber);
+                    articleNumber++;
 
-                connection.query('SELECT id FROM gate15_articles WHERE title="' + title + '"', function (error, result, fields) {
-                    //if (error) throw error;
-                    if (result[0]) {
-                        //console.log("article already exists, doing nothing");
-                        callbackArticle();
-                    } else {
-                        var query = connection.query('INSERT INTO gate15_articles SET ?', article, function(err, result) {
-                        if (err) console.log(err);
-                            //console.log('result:', result);
-                        });
-                        //console.log(query.sql);
-                        callbackArticle();
-                    }
+                    connection.query('SELECT id FROM gate15_articles WHERE title="' + title + '"', function (error, result, fields) {
+                        //if (error) throw error;
+                        if (result[0]) {
+                            //console.log("article already exists, doing nothing");
+                            callbackArticle();
+                        } else {
+                            var query = connection.query('INSERT INTO gate15_articles SET ?', article, function(err, result) {
+                            if (err) console.log(err);
+                                //console.log('result:', result);
+                            });
+                            //console.log(query.sql);
+                            callbackArticle();
+                        }
+                    });
                 });
             });
         }, function() {
