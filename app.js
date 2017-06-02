@@ -12,7 +12,7 @@ var connection = mysql.createConnection({
   database : mysqlCredentials.database
 });
 
-function scrapePage(page) {
+function scrapeNews(page) {
     rp(page)
     .then(function (pageData) {
         pageData = JSON.parse(pageData);
@@ -56,7 +56,7 @@ function scrapePage(page) {
                     article.is_accepted = 0;
                     article.tags = tags;
 
-                    console.log(articleNumber);
+                    console.log("Article n.:", articleNumber);
                     articleNumber++;
 
                     connection.query('SELECT id FROM gate15_articles WHERE title="' + title + '"', function (error, result, fields) {
@@ -77,6 +77,89 @@ function scrapePage(page) {
             });
         }, function() {
             console.log("Finished getting articles.");
+            //connection.end();
+        });
+
+    })
+    .catch(function (err) {
+        // Crawling failed... 
+    });
+
+}
+
+function scrapeEvents(page) {
+    rp(page)
+    .then(function (pageData) {
+        pageData = JSON.parse(pageData);
+        events = pageData.data;
+
+        //connection.connect();
+
+        var eventNumber = 1;
+        async.each(events, function(eventsItem, callbackEvent) {
+            var event = {};
+            var title, eventUrl, originalUrl, author, imageUrl, eventBeginDate, eventEndDate, price, eventType;
+            var eventContent = "";
+
+            tags = "";
+            title = eventsItem.title;
+            eventUrl = "https://www.gate15.be" + eventsItem.uriPrefix + "/" + eventsItem.slug;
+            author = "gate15";
+            
+            var snippetPart = 1;
+            async.each(eventsItem.snippets, function(snippet, callbackSnippet) {
+                //only first type=media is the event pic
+                if (snippet.type == "media" && !imageUrl) {
+                    imageUrl = snippet.body.file[0].src;
+                } else {
+                    eventContent += snippet.body.description + " ";
+                    eventType = snippet.body.type;
+                    eventBeginDate = snippet.body.dates[0].beginConverted.sec + 7200;
+                    eventEndDate = snippet.body.dates[0].endConverted.sec + 7200;
+                    price = snippet.body.price;
+                    originalUrl = snippet.body.url;
+
+                }
+                callbackSnippet();
+            }, function() {
+                async.each(eventsItem.tags, function(tag, callbackTag) {
+                    tags += " " + tag;
+                    callbackTag();
+                }, function() {
+                    //mysql column names
+                    event.title = title;
+                    event.author = author;
+                    event.event_url = eventUrl;
+                    event.original_url = originalUrl;
+                    event.picture_url = imageUrl;
+                    event.event_begin_date = eventBeginDate;
+                    event.event_end_date = eventEndDate;
+                    event.content = eventContent;
+                    event.tags = tags;
+                    event.price = price;
+                    event.event_type = eventType;
+
+                    console.log("Event n.:", eventNumber);
+                    eventNumber++;
+
+                    connection.query('SELECT id FROM gate15_events WHERE title="' + title + '"', function (error, result, fields) {
+                        //if (error) throw error;
+                        if (result[0]) {
+                            //console.log("event already exists, doing nothing");
+                            callbackEvent();
+                        } else {
+                            var query = connection.query('INSERT INTO gate15_events SET ?', event, function(err, result) {
+                            if (err) console.log(err);
+                                //console.log('result:', result);
+                            });
+                            //console.log(query.sql);
+                            callbackEvent();
+                        }
+                    });
+                });
+            });
+        }, function() {
+            console.log("Finished getting events.");
             connection.end();
         });
 
@@ -87,4 +170,5 @@ function scrapePage(page) {
 
 }
 
-scrapePage("https://www.gate15.be/srv/content/d/content-type/10/start/0/limit/50/excluded_tags/trots");
+scrapeNews("https://www.gate15.be/srv/content/d/content-type/10/start/0/limit/50/excluded_tags/trots");
+scrapeEvents("https://www.gate15.be/srv/content/d/content-type/12/start/0/limit/50");
