@@ -43,7 +43,8 @@ function scrapeNews(page) {
                 callbackSnippet();
             }, function() {
                 async.each(newsItem.tags, function(tag, callbackTag) {
-                    tags += " " + tag;
+                    tags = tag.replace("-", "");
+                    tags = tags.replace(" ", "");
                     callbackTag();
                 }, function() {
                     //mysql column names
@@ -123,7 +124,8 @@ function scrapeEvents(page) {
                 callbackSnippet();
             }, function() {
                 async.each(eventsItem.tags, function(tag, callbackTag) {
-                    tags += " " + tag;
+                    tags = tag.replace("-", "");
+                    tags = tags.replace(" ", "");
                     callbackTag();
                 }, function() {
                     //mysql column names
